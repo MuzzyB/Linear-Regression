@@ -1,0 +1,997 @@
+---
+title: "Linear Regression Analysis Template"
+author: "Muuzaani Nkhoma"
+date: "March 6, 2018"
+output: html_document
+---
+
+
+### Load Packages
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(MASS)
+library(car)
+library(DataExplorer)             # Plot Principal Components
+library(glmnet)  # For ridge regression fitting. It also supports elastic-net and LASSO models
+
+```
+
+## Read and prepare the data
+
+```{r}
+
+print("Start importing dataset")
+jet <- read.csv("\\Users\\muuza\\OneDrive\\Documents\\Muu\\St.CloudState\\Spring 18\\STAT421 Applied Regression Methods\\421DATA\\/data-table-B13.csv", header = TRUE)
+print("Finished importing dataset")
+
+```
+
+##View first observations
+
+```{r}
+
+head(jet)
+
+```
+
+#### View last observations
+```{r}
+
+tail(jet)
+
+```
+
+#### Summary Statistics
+
+```{r}
+
+summary(jet)
+
+```
+
+
+### # Plot Scatterplots to investigate the linear relationship between response and # regressor variables
+
+```{r}
+
+pairs(jet)
+
+```
+
+
+# Test for correlation to get the values of the correlation between response and 
+# regressor variables
+
+```{r}
+
+cor(jet)
+
+```
+
+###Fit the Full model with all regressor variables
+
+```{r}
+
+print("Started fitting the linear model")
+jet.model <- lm(y~x1 + x2 + x3 + x4 + x5 + x6 , data = jet) 
+print("Finished fitting linear model")
+
+```
+
+#Full Model Summary
+```{r}
+
+summary.lm(jet.model)
+
+```
+
+#Full Model Analysis of Variance Table
+```{r}
+
+ anova(jet.model)
+
+```
+
+
+#Fit Predicted and Residual Values
+```{r}
+
+print("Start fitting predicted and residual values")
+jet1.model.fit = predict (jet.model)
+jet1.model.res = residuals(jet.model)
+jet1.model.stdres= rstudent(jet.model)
+print("Finished fitting predicted and residual values")
+
+```
+
+
+##' Calculate the predictive residuals in the Full Model
+
+#AIC
+```{r}
+
+AIC(jet.model)
+
+```
+
+#BIC
+```{r}
+
+BIC(jet.model)
+
+```
+
+#Press Statistic
+```{r}
+
+pr <- residuals(jet.model)/(1-lm.influence(jet.model)$hat)
+#' calculate the PRESS
+PRESS <- sum(pr^2)
+PRESS
+
+```
+
+
+###Checking for multicollinearity in independent variables of the Full Model.
+
+#VIF
+```{r}
+
+library(perturb)
+car::vif(jet.model)
+
+```
+
+#VIF Above Threshold
+```{r}
+
+car::vif(jet.model) > 10 #Cutoff Point
+
+```
+
+###Eigensystem Analysis
+
+# Condition Number          < 100: No serious problem
+# 100<= condition number < 1000: Moderate to strong multicollinerity
+# Condition Number       >= 1000: Severe multicollinearity
+
+#At least one condition Index >= 1000 means near linear dependency
+```{r}
+
+print(colldiag(jet.model))
+
+```
+
+
+#### Full Model Diagnostics
+
+#(Are all the conditions satisfied? LINE)
+#(What regressors seem important?)
+#(Any Possible Outliers?)
+#(Is there any need for transformation of response or regressor variables?)
+
+#Residual Analysis
+#Diagnostics Plot
+```{r}
+
+layout(matrix(c(1,2,3,4),1,2)) # optional 2 graphs/page 
+plot(jet.model)
+
+```
+
+##### Model and Variable Selection
+
+### (To be performed if the number of variables is very large)
+### (Otherwise go straight to All Possible Regression )
+
+#Stepwise Regression Model Selection
+```{r}
+
+step(lm(y~x1 + x2 + x3 + x4 + x5 + x6 , data = jet),direction="both")
+
+```
+
+#Backward Regression Model Selection
+```{r}
+
+step(lm(y~x1 + x2 + x3 + x4 + x5 + x6 , data = jet),direction="backward")
+
+```
+
+#Forward Regression Model Selection
+```{r}
+
+step(lm(y~x1 + x2 + x3 + x4 + x5 + x6 , data = jet),direction="forward")
+
+```
+
+
+###  Evaluate Subset Regression Models
+##   All Subsets Regression
+
+
+```{r}
+
+jetd <- data.frame(jet)
+library(leaps)
+attach(jetd)
+jet.regsubsets <-regsubsets(y~x1 + x2 + x3 + x4 + x5 + x6 , data = jetd,nbest=5)
+jet.regsubsets.summary   =summary(jet.regsubsets,all.best=TRUE,matrix=TRUE,matrix.logical=FALSE,df=NULL)
+names(jet.regsubsets.summary)
+
+```
+
+## Summary  All Subsets Regression
+```{r}
+
+jet.regsubsets.summary$outmat
+
+```
+
+
+## Mallow Cp
+```{r}
+
+jet.regsubsets.summary$cp
+
+```
+
+## Adjusted R2
+```{r}
+
+jet.regsubsets.summary$adjr2
+
+```
+
+## Adjusted R2 Plot
+```{r}
+
+plot(jet.regsubsets.summary$adjr2)
+
+```
+
+
+## Residual Sum of Squares
+```{r}
+
+jet.regsubsets.summary$rss
+
+```
+
+## Residual Sum of Squares Plot
+```{r}
+
+plot(jet.regsubsets.summary$rss)
+
+```
+
+
+## BIC
+```{r}
+
+jet.regsubsets.summary$bic
+
+```
+
+## BIC Plot
+```{r}
+
+plot(jet.regsubsets.summary$bic)
+
+```
+
+```{r}
+
+jet.regsubsets.summary$outmat[21, ]
+                
+```
+
+
+```{r}
+
+jet.regsubsets.summary$cp[21]
+                
+```
+
+
+```{r}
+
+jet.regsubsets.summary$adjr2[21]
+                
+```
+
+
+```{r}
+
+jet.regsubsets.summary$rss[21]
+                
+```
+
+```{r}
+
+jet.regsubsets.summary$bic[21]
+
+```
+
+```{r}
+
+jet.regsubsets.summary$rsq[21]
+
+```
+
+##### Analysis of Individual Chosen Models
+
+
+
+# Chosen Models:
+
+```{r 1c}
+#1 From Scatterplots
+#lm(MORT~PRECIP + EDUC + NONWHITE + SO2, data = airPd)
+#2 From Full Linear Regression
+#lm(MORT~PRECIP + EDUC + NONWHITE + SO2, data = airPd)
+#3 From Stepwise Selection Process
+#lm(formula = MORT ~ PRECIP + EDUC + NONWHITE + SO2, data = airPd)
+#4 From Backward Selection Process
+#lm(formula = MORT ~ PRECIP + EDUC + NONWHITE + SO2, data = airPd)
+#5 From Forward Selection Process
+#lm(formula = MORT ~ PRECIP + EDUC + NONWHITE + NOX + SO2, data = airPd)
+
+
+```
+
+### Candidate Model #1
+# y~x1 + x3 +x5 + x6
+
+# Fitting the model
+
+```{r}
+
+print("Started fitting the linear model")
+jet1.model <- lm(y~x1 + x3 +x5 + x6, data = jet) 
+print("Finished fitting linear model")
+
+```
+
+#Model Summary
+
+```{r}
+
+summary.lm(jet1.model)
+
+```
+
+#Model Analysis of Variance 
+
+```{r}
+
+anova(jet1.model)
+
+```
+
+#Fitted and Residual Values
+
+```{r}
+
+print("Start fitting predicted and residual values")
+jet1.model.fit = predict (jet1.model)
+jet1.model.res = residuals(jet1.model)
+jet1.model.stdres= rstudent(jet1.model)
+print("Finished fitting predicted and residual values")
+
+```
+
+####MODEL ADEQUACY CHECKING
+
+###Model Diagnostics
+#Residual Analysis
+
+#Diagnostics Plots- Normal Probability and Histogram
+
+#Check for Residual Normality
+#Check for Outliers
+```{r}
+
+par(mfrow=c(1,2),oma=c(0,0,0,0))
+qqnorm(jet1.model.res,pch=16)
+qqline(jet1.model.res, col = 2)
+hist(jet1.model.res, col="gray",xlab='Residual',main='Histogram of Studentized \nResiduals Model #1')
+
+```
+
+###Model Diagnostics
+#Residual Analysis
+
+#Diagnostics Plot- Studentized Residuals and R-Student Residual Plots
+
+#Check for Equal(Constant) Variance
+#Check for Outliers
+#Check for nonlinearity or other Patterns
+```{r}
+
+par(mfrow=c(1,2),oma=c(0,0,0,0))
+plot(jet1.model.res~jet1.model.fit,pch=16,xlab='Fitted Value',ylab='studentized Residuals', 
+     main = "Studentized Residuals \nvs Fits Model #1")
+abline(h = 0)
+plot(jet1.model.stdres~jet1.model.fit,pch=16,xlab='Fitted Value',ylab='R-Student Residuals', 
+     main = "R-Student Residuals \nvs Fits Model #1")
+abline(h = 0)
+
+```
+
+##Further Residual Analysis
+#Partial Regression Plots
+
+#Assess linearity of individual regressors
+#Check for added- Value/Marginal usefulenes of regressor variables
+
+
+```{r}
+
+#Partial Regression Plots Model #1
+par(mfrow=c(1,2),oma=c(0,0,0,0))
+# Regress y on other regressors without candidate regressor
+jet1.model.x2 <- lm(formula = y ~ x3, data = jet)
+jet1.model.x3 <- lm(formula = y ~ x2 , data = jet)
+# Regress candidate regressor on other remaining regressors
+model.x2 <- lm(x2 ~ x3, data = jet)
+model.x3 <- lm(x3 ~ x2, data = jet)
+
+```
+
+#Partial Regression Plots Model #1
+
+```{r}
+
+plot(resid(jet1.model.x2)~resid(model.x2), pch=16,
+     xlab = "residuals of x2 vs other x",
+     ylab = "residuals of y vs other x",
+     main = "Partial Regression Plot \nof Model #1 x2")
+abline(lm(resid(jet1.model.x2)~resid(model.x2)))
+
+plot(resid(jet1.model.x3)~resid(model.x3), pch=16,
+     xlab = "residuals of x3 vs other x",
+     ylab = "residuals of y vs other x",
+     main = "Partial Regression Plot \nof Model #1 x3")
+abline(lm(resid(jet1.model.x3)~resid(model.x3)))
+
+```
+
+####Model Diagnostics
+##Lack-of-fit test
+#Small p-Value and F-Value > F-statistic means presence of lack-of-fit
+
+```{r}
+
+library(alr3)
+pureErrorAnova(jet1.model)
+
+```
+
+```{r}
+
+Reduced=lm(y ~ x1 + x2 + x1 * x2 + I(x1^2) + I(x2^2), data = jetd)#fit reduced model
+Full=lm(y ~  0 + as.factor(x1) + as.factor(x2) + as.factor(x1 * x2) + as.factor(I(x1^2)) + as.factor(I(x2^2)), data = jetd) #fit full model
+anova(Reduced, Full) #get lack-of-fit test
+
+```
+
+####TRANSFORMATIONS AND POLYNOMIAL REGRESSION
+#Dealing with Constant Variance and Non-Normality
+#a.Linear Transformation
+
+##Box-Cox Method Transformation on y 
+
+##Box- Cox Method
+```{r}
+
+boxcox(y ~ ., data = jet,
+       lambda = seq(-1.5, 1.5, length = 10))
+
+```
+
+#b. Weighted Least Squares
+#Define the weights and fit the model:
+#Response yi1
+
+```{r}
+#Needs a standard deviation column created from local means
+#y1respw.model = lm(y~x1 + x2 + x3, weights = SD, data =jetd)
+#summary(y1respw.model)
+
+```
+
+#Try fitting the regression without weights and see what the difference is.
+
+```{r}
+#gu <- lm(crossx ~ energy, strongx)
+#summary(gu)
+
+```
+
+#The two fits can be compared
+```{r}
+#plot(crossx ~ energy, data=strongx)
+#abline(g)
+#abline(gu,lty=2)
+ 
+```
+
+###Polynomial Regression
+#Dealing with nonlinear or curvelinesr problems
+
+
+
+
+
+
+
+####DIAGNOSTICS-LEVERAGE AND INFLUENTIAL POINTS ANALYSIS
+
+##SUMMARY
+
+```{r}
+
+jet1.model.infl <- influence.measures(jet1.model)
+p1 = 8                #Number of regressor variables under consideration
+p1
+n1 = nrow(jet)     #Number of Observations
+n1
+#Influential Diagnostics Summary
+summary(jet1.model.infl) # only these
+
+```
+
+####Model Diagnostics
+##Influential Analysis
+
+#1 DFFITS (how much the regression function changes at the i-th case / 
+# observation when the  i -th case / observation is deleted.)
+# identify DFFITS values > 2/(sqrt(nrow(jetd))
+```{r}
+
+cutoffdf =  2 /sqrt(p1/n1) 
+cutoffdf
+jet1.model.dfits = dffits(jet1.model)
+plot(dffits(jet1.model), pch=16, ylab="DFFITS", main = "DFFITS Plot of Model #1")
+abline(h = cutoffdf)
+
+```
+
+####Model Diagnostics
+##Influential Analysis
+
+#2 Cook's D  (how much the entire regression function changes when 
+# the i -th case is deleted)
+# identify D values > 4/(n-p-1) 
+```{r}
+
+cutoffCD =  4/(n1-p1-1) 
+cutoffCD
+plot(cooks.distance(jet1.model), pch=20,  ylab="Cook's distance", main = "Cook's Distance\n  Plot of Model #1")
+abline(h = cutoffCD)
+
+```
+
+####Model Diagnostics
+##Influential Analysis
+
+#3 DFBETAS plot (measures how much the coefficients change when the i-th case is deleted.)
+# identify DFBETAS values > 2/(sqrt(nrow(jetd))
+```{r}
+
+cutoffdb = 2 / sqrt(n1)
+cutoffdb
+jet1.model.dfb = dfbeta(jet1.model, infl = lm.influence(jet1.model, do.coef = TRUE))
+plot(dfbetas(jet1.model), pch=20, ylab="DBETAS", main = "DFBETAS Plot of Model #1")
+
+```
+
+####Model Diagnostics
+##Influential Analysis
+
+#4 Leverage Points (regressor variable with the largest distance from the center of the centroid)
+# which observations 'are' influential X-Value Outliers
+# (2 * p) / n
+```{r}
+
+cutoffhat = (2 * p1) / n1
+cutoffhat
+plot(hatvalues(jet1.model), pch=20, ylab='Hat values', main = "Leverage Points Plot\n of Model #1")
+abline(h = cutoffhat)
+
+```
+
+####Model Diagnostics
+##Influential Analysis
+
+# OtherPlots of Influence
+```{r}
+
+plot(rstudent(jet1.model) ~ hatvalues(jet1.model),pch=20, main = "R-Student Residuals \nvs Leverage Model #3") # recommended by some
+plot(jet1.model,pch=20, which = 5) # an enhanced version of that via plot(<lm>)
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(jet1.model)
+
+```
+####Model Diagnostics
+
+#Influential Diagnostics Output
+```{r}
+
+jet1.model.infl <- influence.measures(jet1.model)
+jet1.model.infl         # all
+
+```
+
+#### MULTICOLLINEARITY DIAGNOSTICS
+
+##Checking multicollinearity for independent variables.
+##Check for extent of lack of orthogonality and sources
+
+#1.Variance Inflation Factors
+```{r}
+
+car::vif(jet1.model) # variance inflation factors 
+car::vif(jet1.model) > 10 # problem?
+
+```
+
+#2.Eigensystem Analysis
+# Condition Number          < 100: No serious problem
+# 100<= condition number < 1000: Moderate to strong multicollinerity
+# Condition Number       >= 1000: Severe multicollinearity
+
+#Condition Index > 30 and variance decomposition proportion 0.5 means near linear dependency and indicates multicollinearity
+
+#a.Variance Decomposition Proportions
+```{r}
+
+print(colldiag(jet1.model))
+
+```
+
+
+#b.Variance Decomposition Proportions (Centered)
+
+```{r}
+
+print(colldiag(jet1.model), center = TRUE)
+
+```
+
+### Dealing with Multicollinearity
+#1 Collect additional data
+#2 Model Respecification
+
+### 3 RIDGE REGRESSION
+
+# Fit Original Model and Compute VIF Values
+```{r}
+
+lm(jet1.model)
+car::vif(jet1.model)
+car::vif(jet1.model)> 10 
+
+```
+
+#Load lmridge library for Ridge Regression
+```{r}
+
+library(lmridge)
+lmridge(jet1.model, data = jet)
+
+```
+
+#Plot Ridge Trace
+```{r}
+
+plot(lm.ridge(jet1.model, data = jet, lambda = seq(0,0.1,0.001), 
+              main = "Ridge Trace for Model #1"))
+
+```
+
+#Select the biasing parameter
+```{r}
+
+select(lm.ridge(jet1.model, data = jet, lambda = seq(0,0.1,0.0001)))
+
+```
+
+#Fit the Ridge Model 
+```{r}
+
+#Ridge Model
+lmridge(jet1.model, data = jet, K = 0.009742598)
+jet.ridge.model = lmridge(jet1.model, data = jet, K = 0.009742598)
+
+```
+
+#Ridge Model Summary
+```{r}
+
+summary(jet.ridge.model)
+
+```
+
+#Ridge Model VIF Values
+```{r}
+
+vif.lmridge(jet.ridge.model)
+vif.lmridge(jet.ridge.model) > 10 
+
+```
+
+### 4 PRINCIPAL COMPONENT REGRESSION
+
+# Fit Original Model
+```{r}
+
+library(pls)      # For Principal Component Regression
+lm(y~ ., data = jet)
+
+```
+
+```{r}
+
+# Remove Dependent Variable
+jet.depV <- dplyr::select(jet, -y)
+
+```
+
+
+```{r}
+
+# Perform PCA
+pcaJet <- prcomp(jet.depV, scale = TRUE)
+
+```
+
+
+```{r}
+print(pcaJet)
+```
+
+
+
+```{r}
+
+plot_prcomp(jet.depV)
+
+```
+
+
+#### Biplot
+
+```{r}
+jetSc <- jet.depV %>%
+         scale() 
+
+biplot(prcomp(jetSc))
+
+```
+
+
+####Biplot
+
+```{r}
+biplot(pcaJet, scale = TRUE)
+
+```
+
+
+#### Screeplot
+
+```{r}
+
+screeplot(prcomp(jetSc), type = "lines")
+
+```
+
+
+####Screeplot
+
+```{r}
+
+plot(pcaJet)
+
+```
+
+
+
+
+#Fit Principal Component Regression Model
+```{r}
+
+print("Start fitting Principal Component Regression model")
+jet.pcr.model = pcr(y~ ., data = jet)
+print("Finished fitting Principal Component Regression model")
+
+```
+
+#Summary of Principal Component Regression
+```{r}
+ 
+summary(jet.pcr.model, validation = "CV")
+
+```
+
+
+
+#### 5. PARTIAL LEAST SQUARES REGRESSION
+
+##### Fit PARTIAL LEAST SQUARES model
+
+```{r}
+
+print("Start fitting Partial Least Squares model")
+jet.pls.model <- plsr(y ~ ., data = jet, validation = "CV")
+print("Finished fitting Principal Component Regression model")
+
+
+```
+
+
+###### Summary
+
+```{r}
+
+summary(jet.pls.model)
+
+```
+
+
+# Final  multicollinearity in independent variables check.
+
+#VIF
+```{r}
+
+car::vif(lm(y~x1 + x3 +x5 + x6, data = jet))
+car::vif(jet1.model) # variance inflation factors 
+car::vif(jet1.model) > 10 # problem?
+
+```
+
+##### MODEL VALIDATION
+
+
+##CROSS-VALIDATION (DATA SPLITTING)
+
+```{r}
+
+library(caret)
+set.seed(3456)
+trainIndex <- createDataPartition(jet$y, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+head(trainIndex)
+
+
+jet_test <- jet[-trainIndex,]
+jet_train <- jet[trainIndex,]
+
+# Examine the dimensions
+dim(jet_train) # training cases
+dim(jet_test) # test cases
+dim(jet) # entire data set
+
+```
+
+
+###Model Coeeficients and Predicted Values Analysis
+##Variance Inflation Factors (VIF) Comparison
+
+#VIF Model #1
+```{r}
+
+car::vif(jet1.model) # variance inflation factors 
+car::vif(jet.ridge.model) # variance inflation factors 
+
+```
+
+#VIF Model #2
+```{r}
+
+car::vif(jet1.model) # variance inflation factors 
+car::vif(jet.ridge.model) # variance inflation factors 
+
+```
+
+#PRESS Statistic Comparison
+
+##PRESS Statistic Model #1
+```{r}
+
+pr1 <- residuals(jet.model)/(1-lm.influence(jet.model)$hat)
+#' calculate the PRESS
+PRESS1 <- sum(pr1^2)
+PRESS1
+
+```
+
+
+##PRESS Statistic Model #2
+```{r, eval=FALSE}
+
+pr2 <- residuals(jet.ridge.model)/(1-lm.influence(jet.ridge.model)$hat)
+#' calculate the PRESS
+PRESS2 <- sum(pr2^2)
+PRESS2
+
+```
+
+
+
+#### 6. LASSO REGRESSION
+
+##### For glmnet we make a copy of our dataframe into a matrix
+
+
+###### Creating a response column: 
+
+```{r 1b}
+response_column <- which(colnames(jet) == "y")
+
+```
+
+###### For glmnet we make a copy of our dataframe into a matrix
+
+```{r 1b}
+trainx_dm <- data.matrix(jet_train[,-response_column])
+dim(trainx_dm)
+head(trainx_dm)
+
+testx_dm <- data.matrix(jet_test[,-response_column])
+dim(testx_dm)
+head(testx_dm)
+
+```
+
+
+```{r 1b}
+print("Started fitting LASSO")
+jet.lasso.model <- cv.glmnet(x=trainx_dm, y=jet_train$y, alpha=1)
+print("Finished fitting LASSO")
+
+```
+
+
+#### MODEL PERFORMANCE
+
+
+#### Fit Predicted and Residual Values
+
+```{r}
+
+print("Started fitting the LASSO model")
+
+jet.lasso.model.fit = predict (jet.lasso.model,  newx=testx_dm, type="response", s='lambda.min')[,1]
+
+print("Finished fitting LASSO model")
+
+```
+
+
+
+##### ROC CURVE
+
+```{r}
+
+plotROC(jet_test$y, jet.lasso.model.fit)
+
+```
+
+
+
+##### CONCORDANCE
+
+```{r}
+
+print("2. LASSO: Area under the ROC curve:")
+auc(testx_dm$y, predictions_lasso)
+
+```
