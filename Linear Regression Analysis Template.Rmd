@@ -25,7 +25,7 @@ library(glmnet)  # For ridge regression fitting. It also supports elastic-net an
 ```{r}
 
 print("Start importing dataset")
-jet <- read.csv("\\Users\\muuza\\OneDrive\\Documents\\Muu\\St.CloudState\\Spring 18\\STAT421 Applied Regression Methods\\421DATA\\/data-table-B13.csv", header = TRUE)
+jet <- read.csv("DATA\data-table-B13.csv", header = TRUE)
 print("Finished importing dataset")
 
 ```
