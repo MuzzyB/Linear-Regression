@@ -33,6 +33,12 @@ names(jet)
 print("Finished importing dataset")
 
 ```
+dim(jet)
+nrow(jet)
+ncol(jet)
+print("Finished importing dataset")
+
+```
 
 ##View first observations
 
