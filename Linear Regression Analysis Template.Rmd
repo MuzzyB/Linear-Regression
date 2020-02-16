@@ -286,9 +286,9 @@ jet.regsubsets.summary$bic
 plot(jet.regsubsets.summary$bic)
 
 ```
-
+### Chosen model summary and parameter values
 ```{r}
-
+print("Summary")
 jet.regsubsets.summary$outmat[21, ]
                 
 ```
@@ -296,32 +296,15 @@ jet.regsubsets.summary$outmat[21, ]
 
 ```{r}
 
+print("Mallow's cp value")
 jet.regsubsets.summary$cp[21]
-                
-```
-
-
-```{r}
-
+print("Adjusted R-squared value")
 jet.regsubsets.summary$adjr2[21]
-                
-```
-
-
-```{r}
-
+print("Residual Sum of Squares value")
 jet.regsubsets.summary$rss[21]
-                
-```
-
-```{r}
-
+print("RBIC value")
 jet.regsubsets.summary$bic[21]
-
-```
-
-```{r}
-
+print("R-squared value")
 jet.regsubsets.summary$rsq[21]
 
 ```
